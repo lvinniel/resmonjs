@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Resource Monitor jQuery Plugin Spec Runner</title>
+<link rel="shortcut icon" type="image/png" href="../jasmine_favicon.png">
+<link rel="stylesheet" type="text/css" href="../jasmine.css">
+</head>
+
+<body>
+
+	<div id="container"></div>
+
+	<!-- js unit-test framework files... -->
+	<script src="../jasmine.js"></script>
+	<script src="../jasmine-html.js"></script>
+	<script src="../boot.js"></script>
+
+	<!-- plugin source file(s)... -->
+	<script src="https://code.jquery.com/jquery-1.11.0.min.js"></script>
+	<script src="../../src/jquery.resmon.js"></script>
+
+	<!-- spec source... -->
+	<script>
+		describe("A Resource Monitor", function() {
+
+			beforeEach(function() {
+				$.ResourceMonitor({}); // this will reinitialize the plugin back to its original settings.
+			});
+
+			afterEach(function() {
+			});
+
+			it("should pass a simple canary test", function() {
+				expect(true).toBe(true);
+			});
+
+			it("should be registered in jQuery's global symbol ($)", function() {
+				expect(typeof $.ResourceMonitor).toBe("function");
+			});
+
+			it("should only return a single instance from its constructor", function() {
+				var plugin1 = $.ResourceMonitor();
+				var plugin2 = $.ResourceMonitor();
+				expect(plugin1).toEqual(plugin2);
+			});
+
+			it("should be stored in the data attribute of the HTML element", function() {
+				var pluginInstanceFromConstructor = $.ResourceMonitor();
+				var pluginInstanceFromHtmlData = $("html").data($.ResourceMonitor().name);
+				expect(pluginInstanceFromConstructor).toEqual(pluginInstanceFromHtmlData);
+			});
+
+			it("has a 'monitorInterval' setting that has a default value of 1000", function() {
+				expect($.ResourceMonitor().settings.monitorInterval).toBe(1000);
+			});
+
+			it("has a 'monitorLimit' setting that has a default value of Number.MAX_VALUE", function() {
+				expect($.ResourceMonitor().settings.monitorLimit).toBe(Number.MAX_VALUE);
+			});
+
+			it("has a 'additionalResources' setting that has a default value of an empty array", function() {
+				expect($.ResourceMonitor().settings.additionalResources).toEqual([]);
+			});
+
+			it("has a 'onMonitorPoll' setting that has a default value of an empty function", function() {
+				expect(typeof $.ResourceMonitor().settings.onMonitorPoll).toBe("function");
+			});
+
+			it("has a 'onBeforeResourceRequest' setting that has a default value of an empty function", function() {
+				expect(typeof $.ResourceMonitor().settings.onBeforeResourceRequest).toBe("function");
+			});
+
+			it("has a 'onAfterResourceRequest' setting that has a default value of an empty function", function() {
+				expect(typeof $.ResourceMonitor().settings.onAfterResourceRequest).toBe("function");
+			});
+
+			it("has a 'onResourceModified' setting that has a default value of an empty function", function() {
+				expect(typeof $.ResourceMonitor().settings.onResourceModified).toBe("function");
+			});
+
+			it("should recreate a new instance when new options are passed into its constructor", function() {
+				var currentPluginInstance = $.ResourceMonitor();
+				var newPluginInstanceWithNewOptions = $.ResourceMonitor({
+					monitorInterval : 2000
+				});
+				expect(currentPluginInstance).not.toEqual(newPluginInstanceWithNewOptions);
+			});
+
+			it("has a 'name' property equal to 'pageResourceMonitor'", function() {
+				expect($.ResourceMonitor().name).toBe("pageResourceMonitor");
+			});
+
+			it("has a 'resources' property that is an empty array", function() {
+				expect($.ResourceMonitor().resources).toEqual([]);
+			});
+
+			it("has a 'intervalTimerId' property equal to zero", function() {
+				expect($.ResourceMonitor().intervalTimerId).toEqual(0);
+			});
+
+			it("has a 'monitorCount' property equal to zero", function() {
+				expect($.ResourceMonitor().monitorCount).toEqual(0);
+			});
+
+			it("has a 'version' property equal to '1.0'", function() {
+				expect($.ResourceMonitor().version).toBe("1.0");
+			});
+
+			it("has a 'status' property equal to 'created'", function() {
+				expect($.ResourceMonitor().status).toBe("created");
+			});
+
+			it("has a 'statuses' property with three statuses", function() {
+				expect($.ResourceMonitor().statuses).toEqual([ "created", "initialized", "started", "stopped" ]);
+			});
+
+			it("has a 'resourceTypes' property with four types", function() {
+				expect($.ResourceMonitor().resourceTypes).toEqual([ "script", "stylesheet", "html" ]);
+			});
+
+			it("has a 'settings' property that is equal to its defaults", function() {
+				expect($.ResourceMonitor().settings).toEqual($.ResourceMonitor().defaults);
+			});
+
+			it("has a 'defaults' property that cannot change the internal default settings when its reinitialized", function() {
+				$.ResourceMonitor().defaults.monitorInterval = 100;
+				var itsUpdatedDefaults = $.ResourceMonitor().defaults;
+				var itsInternalDefaultsAfterReinitialization = $.ResourceMonitor({}).defaults; // passing {} will reinitialize it
+				expect(itsUpdatedDefaults).not.toEqual(itsInternalDefaultsAfterReinitialization);
+			});
+
+			it("has an 'init' function that gets all the resources on the page and stores them into the 'resources' array property", function() {
+				$.ResourceMonitor().init();
+				var resources = $.ResourceMonitor().resources;
+				expect(resources.length).toEqual(7);
+			});
+
+			it("will wrap each resource on the page using a Resource object and store it in the 'resources' array property", function() {
+				$.ResourceMonitor().init();
+				var resources = $.ResourceMonitor().resources;
+				resources.forEach(function(thisResource) {
+					expect(thisResource).toEqual(jasmine.any($.ResourceMonitor.Resource));
+				});
+			});
+
+			it("will find five script resources on this page with a src attributes", function() {
+				$.ResourceMonitor().init();
+				var resources = $.ResourceMonitor().resources;
+				var countOfScripts = 0;
+				resources.forEach(function(resource) {
+					if (resource.type == "script") {
+						countOfScripts++;
+					}
+				});
+				expect(countOfScripts).toEqual(5);
+			});
+
+			it("will find one stylesheet resource on this page with a href attribute", function() {
+				$.ResourceMonitor().init();
+				var resources = $.ResourceMonitor().resources;
+				var countOfStylesheet = 0;
+				resources.forEach(function(resource) {
+					if (resource.type == "stylesheet") {
+						countOfStylesheet++;
+					}
+				});
+				expect(countOfStylesheet).toEqual(1);
+			});
+
+			it("will add the current page as a resource", function() {
+				$.ResourceMonitor().init();
+				var resources = $.ResourceMonitor().resources;
+				var isCurrentPage;
+				var countOfHtml = 0;
+				resources.forEach(function(resource) {
+					if (resource.type == "html") {
+						countOfHtml++;
+						isCurrentPage = resource.url == window.location || isCurrentPage;
+					}
+				});
+				expect(countOfHtml).toEqual(1);
+				expect(isCurrentPage).toBe(true);
+			});
+
+			it("will store additional resources to the 'resources' array property", function() {
+				$.ResourceMonitor({
+					additionalResources : [ new $.ResourceMonitor.Resource("stylesheet", "/CommonSite/css/master.css") ]
+				}).init();
+				var resources = $.ResourceMonitor().resources;
+				expect(resources.length).toEqual(8);
+			});
+
+			it("will set the 'status' property to 'started' when the 'start()' function is called", function() {
+				// As a result of implementing ajax into the start() function, we need to mock out the ajax calls.
+				spyOn($, 'ajax').and.callFake(function(settings) {
+					settings.success("", "success");
+				});
+				$.ResourceMonitor().start();
+				expect($.ResourceMonitor().status).toBe("started");
+				$.ResourceMonitor().stop();
+			});
+
+			it("will set the 'status' property to 'stopped' when the 'stop()' function is called", function() {
+				// As a result of implementing ajax into the start() function, we need to mock out the ajax calls.
+				spyOn($, 'ajax').and.callFake(function(settings) {
+					settings.success("", "success");
+				});
+				$.ResourceMonitor().start();
+				$.ResourceMonitor().stop();
+				expect($.ResourceMonitor().status).toBe("stopped");
+			});
+
+			it("will set the 'status' property to 'created' when the 'stop()' function is called without having the 'start()' function invoked prior", function() {
+				$.ResourceMonitor().stop();
+				expect($.ResourceMonitor().status).toBe("created");
+			});
+
+			it("will set the 'status' property to 'created' when the 'stop()' function is called without having the 'start()' function invoked prior", function() {
+				$.ResourceMonitor().stop();
+				expect($.ResourceMonitor().status).toBe("created");
+			});
+
+			it("will retrieve the pages resources via jQuery's ajax function (setting ifModified to true and async to false)", function() {
+				var countOfResources = 0;
+				spyOn($, 'ajax').and.callFake(function(settings) {
+					expect(settings.ifModified).toBe(true);
+					expect(settings.async).toBe(false);
+					countOfResources++;
+					settings.success("", "success");
+				});
+				$.ResourceMonitor().start();
+				var resources = $.ResourceMonitor().resources;
+				expect(countOfResources).toEqual(resources.length);
+				$.ResourceMonitor().stop();
+			});
+			
+			describe("using the setInterval() function to monitor resources", function() {
+
+				var timerCallback;
+				
+				beforeEach(function() {
+					timerCallback = jasmine.createSpy('timerCallback');
+					jasmine.clock().install();
+				});
+
+				afterEach(function() {
+					jasmine.clock().uninstall();
+				});
+
+				it("will invoke the onMonitorPoll event to be invoked 3 times when the 'monitorLimit' property is 3", function() {
+					var monitorCount = 0;
+					var plugin = $.ResourceMonitor({
+						monitorLimit : 3,
+						onMonitorPoll : function() {
+							monitorCount++;
+							timerCallback();
+						}
+					}).start();
+					expect(timerCallback).not.toHaveBeenCalled();
+					jasmine.clock().tick(3100);
+					expect(timerCallback).toHaveBeenCalled();
+					expect(monitorCount).toEqual(3);
+					$.ResourceMonitor().stop();
+				});
+
+				it("will invoke the onBeforeResourceRequest event for all the page resources it finds (7 total) when the 'monitorLimit' property is 1", function() {
+					var requestCount = 0;
+					var plugin = $.ResourceMonitor({
+						monitorLimit : 1,
+						onBeforeResourceRequest : function(resource) {
+							requestCount++;
+							timerCallback();
+						}
+					}).start();
+					expect(timerCallback).not.toHaveBeenCalled();
+					jasmine.clock().tick(1001);
+					expect(timerCallback).toHaveBeenCalled();
+					expect(requestCount).toEqual(7);
+					$.ResourceMonitor().stop();
+				});
+
+				it("will invoke the onAfterResourceRequest event for all the page resources it finds (7 total) when the 'monitorLimit' property is 1", function() {
+					var requestCount = 0;
+					var plugin = $.ResourceMonitor({
+						monitorLimit : 1,
+						onAfterResourceRequest : function(resource) {
+							requestCount++;
+							timerCallback();
+						}
+					}).start();
+					expect(timerCallback).not.toHaveBeenCalled();
+					jasmine.clock().tick(1001);
+					expect(timerCallback).toHaveBeenCalled();
+					expect(requestCount).toEqual(7);
+					$.ResourceMonitor().stop();
+				});
+				
+			});
+
+		});
+	</script>
+</body>
+</html>
