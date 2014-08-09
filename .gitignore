@@ -34,3 +34,11 @@ Icon
 # Files that might appear on external disk
 .Spotlight-V100
 .Trashes
+
+test/boot.js
+test/jasmine.js
+test/jasmine.css
+test/jasmine-jquery.js
+test/jasmine-html.js
+test/console.js
+test/jasmine_favicon.png
